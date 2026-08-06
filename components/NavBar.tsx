@@ -47,15 +47,15 @@ const NavBar = () => {
                 <div className="actions">
                     {isSignedIn ? (
                         <>
-                            <span className="greetings">
+                            <span className="greeting">
                                 {username ? `Hi ${username}` : "Sign in"}
                             </span>
 
-                            <Button className="sm" onClick={handleAuth}> Logout</Button>
+                            <Button size="sm" onClick={handleAuth}>Logout</Button>
                         </>
                     ) : (
                         <>
-                            <Button className="sm" variant="ghost" onClick={handleAuth}>
+                            <Button size="sm" variant="ghost" onClick={handleAuth}>
                                 Login
                             </Button>
                             <a href="#" className="cta">Get started</a>
