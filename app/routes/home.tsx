@@ -1,4 +1,4 @@
-import NavBar from "~/components/NavBar";
+import NavBar from "../../components/NavBar";
 import type { Route } from "./+types/home";
 
 export default function Home() {

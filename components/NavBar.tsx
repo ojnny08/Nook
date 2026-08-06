@@ -1,18 +1,33 @@
 import { Box } from "lucide-react";
-import { useState } from "react";
-import { Button } from "~/components/ui/Button";
+import { Button } from "./ui/Button";
+import { useAuth } from "../context/AuthContext";
 
 const NavBar = () => {
-    const [usename, setUsername] = useState('')
-    const [isSignedIn, setIsSignedIn] = useState(false)
+    const { isSignedIn, username, signIn, signOut} = useAuth()
 
     const handleAuth = async () => {
-        setIsSignedIn(true)
-        setUsername('Jonny')
-    }
-    const handleLogout = async () => {
+        try {
+            if (isSignedIn) {
+                await signOut();
+            }
+        } catch (error) {
+            return (
+                <div className="signOut-failed">
+                    Signout Failed
+                </div>
+            )
+            return;
+        }
 
+        try {
+            if (!isSignedIn) {
+                await signIn();
+            }
+        } catch (error) {
+            console.error(`sign in faild ${error}`)
+        }
     }
+
     return (
         <header className='navbar'>
             <nav className='inner'>
@@ -33,10 +48,10 @@ const NavBar = () => {
                     {isSignedIn ? (
                         <>
                             <span className="greetings">
-                                {usename ? `Hi ${usename}` : "Sign in"}
+                                {username ? `Hi ${username}` : "Sign in"}
                             </span>
 
-                            <Button className="sm" onClick={handleLogout}> Logout</Button>
+                            <Button className="sm" onClick={handleAuth}> Logout</Button>
                         </>
                     ) : (
                         <>
