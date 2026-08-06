@@ -1,6 +1,7 @@
 import { ArrowRight, Clock, Layers } from "lucide-react";
 import NavBar from "../../components/NavBar";
 import { Button } from "../../components/ui/Button";
+import Upload from "../../components/Upload";
 
 export default function Home() {
   return (
@@ -36,7 +37,7 @@ export default function Home() {
                 <p>Supports JPG, PNG, up to 10MB</p>
               </div>
 
-              <p>Upload Here!</p>
+              <Upload />
             </div>
           </div>
         </section>
@@ -52,7 +53,7 @@ export default function Home() {
               <div className="projects-grid">
                 <div className="projects-card group">
                   <div className="preview">
-                    <img src=""/>
+                    <img src="https://roomify-mlhuk267-dfwu1i.puter.site/projects/1770803585402/rendered.png"/>
                   </div>
 
                   <div className="card body">
@@ -60,7 +61,6 @@ export default function Home() {
                       <h3>Title</h3>
                       <div className="meta">
                         <Clock size={12}/>
-                        
                       </div>
                     </div>
                   </div>
