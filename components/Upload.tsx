@@ -10,12 +10,15 @@ import {
 	PROGRESS_INTERVAL_MS,
 	REDIRECT_DELAY_MS,
 } from '../lib/consstants';
+import { useNavigate } from 'react-router';
 
 const Upload = () => {
 	const [file, setFile] = useState<File | null>(null);
 	const [progress, setProgress] = useState(0);
 	const [error, setError] = useState<string | null>(null);
+	const [projectId, setProjectId] = useState<string | null>(null);
 	const { isSignedIn } = useAuth();
+	const nav = useNavigate();
 
 	const onDrop = useCallback((accepted: File[], rejections: FileRejection[]) => {
 		if (rejections.length > 0) {
@@ -31,8 +34,9 @@ const Upload = () => {
 		if (accepted[0]) {
 			setError(null);
 			setProgress(0);
+			// timestamp prefix keeps projects sortable, uuid keeps the URL unguessable
+			setProjectId(`${Date.now()}-${crypto.randomUUID()}`);
 			setFile(accepted[0]);
-			console.log(accepted[0])
 		}
 	}, []);
 
@@ -47,17 +51,16 @@ const Upload = () => {
 		return () => clearInterval(interval);
 	}, [file]);
 
-	// Clear the file once it finishes so the dropzone comes back.
+	// Once it finishes, hand off to the visualizer for the full view.
 	useEffect(() => {
-		if (progress < 100) return;
+		if (progress < 100 || !projectId) return;
 
 		const timeout = setTimeout(() => {
-			setFile(null);
-			setProgress(0);
+			nav(`/visualizer/${projectId}`);
 		}, REDIRECT_DELAY_MS);
 
 		return () => clearTimeout(timeout);
-	}, [progress]);
+	}, [progress, projectId, nav]);
 
 	const { getRootProps, getInputProps, isDragActive } = useDropzone({
 		onDrop,
