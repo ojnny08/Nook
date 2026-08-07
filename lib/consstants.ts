@@ -32,7 +32,7 @@ export const ACCEPTED_IMAGE_TYPES: Record<string, string[]> = {
     "image/png": [".png"],
 };
 
-export const ROOMIFY_RENDER_PROMPT = `
+export const NOOK_RENDER_PROMPT = `
 TASK: Convert the input 2D floor plan into a **photorealistic, top‑down 3D architectural render**.
 
 STRICT REQUIREMENTS (do not violate):

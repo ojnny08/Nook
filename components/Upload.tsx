@@ -6,10 +6,9 @@ import {
 	ACCEPTED_IMAGE_TYPES,
 	MAX_UPLOAD_BYTES,
 	MAX_UPLOAD_MB,
-	PROGRESS_INCREMENT,
-	PROGRESS_INTERVAL_MS,
 	REDIRECT_DELAY_MS,
 } from '../lib/consstants';
+import { uploadFloorPlan } from '../lib/puter.actions';
 import { useNavigate } from 'react-router';
 
 const Upload = () => {
@@ -34,33 +33,48 @@ const Upload = () => {
 		if (accepted[0]) {
 			setError(null);
 			setProgress(0);
-			// timestamp prefix keeps projects sortable, uuid keeps the URL unguessable
-			setProjectId(`${Date.now()}-${crypto.randomUUID()}`);
+			setProjectId(null);
 			setFile(accepted[0]);
 		}
 	}, []);
 
-	// Tick the progress bar while a file is staged.
+	// Write the staged file to Puter, reporting real upload progress.
 	useEffect(() => {
 		if (!file) return;
 
-		const interval = setInterval(() => {
-			setProgress((prev) => Math.min(prev + PROGRESS_INCREMENT, 100));
-		}, PROGRESS_INTERVAL_MS);
+		let cancelled = false;
 
-		return () => clearInterval(interval);
+		uploadFloorPlan(file, (percent) => {
+			if (!cancelled) setProgress(percent);
+		})
+			.then((item) => {
+				if (cancelled) return;
+				setProgress(100);
+				setProjectId(item.uid);
+			})
+			.catch(() => {
+				if (cancelled) return;
+				// drop back to the dropzone so the user can retry
+				setFile(null);
+				setProgress(0);
+				setError('Upload failed. Please try again.');
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [file]);
 
-	// Once it finishes, hand off to the visualizer for the full view.
+	// Hand off to the visualizer once the upload has actually succeeded.
 	useEffect(() => {
-		if (progress < 100 || !projectId) return;
+		if (!projectId) return;
 
 		const timeout = setTimeout(() => {
 			nav(`/visualizer/${projectId}`);
 		}, REDIRECT_DELAY_MS);
 
 		return () => clearTimeout(timeout);
-	}, [progress, projectId, nav]);
+	}, [projectId, nav]);
 
 	const { getRootProps, getInputProps, isDragActive } = useDropzone({
 		onDrop,
@@ -98,7 +112,7 @@ const Upload = () => {
 				<div className='upload-status'>
 					<div className='status-content'>
 						<div className='status-icon'>
-							{progress === 100 ? (
+							{projectId ? (
 								<CheckCircle size={20} className='check'/>
 							) : (
 								<ImageIcon className='image'/>
@@ -112,7 +126,7 @@ const Upload = () => {
 						</div>
 
 						<p className='status-text'>
-							{progress < 100 ? 'Analyzing Floor Plan' : 'Redirecting'}
+							{projectId ? 'Redirecting' : `Uploading Floor Plan ${Math.round(progress)}%`}
 						</p>
 					</div>
 				</div>
