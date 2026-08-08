@@ -9,3 +9,15 @@ interface AuthContext extends AuthState {
     signIn: () => Promise<boolean>;
     signOut: () => Promise<boolean>;
 }
+type HostingConfig = { subDomain: string; };
+type HostedAsset = { url: string; };
+
+interface StoreHostedImageParams {
+    hosting: HostingConfig | null;
+    url: string;
+    projectId: string;
+    label: "source" | "rendered";
+}
+
+
+
