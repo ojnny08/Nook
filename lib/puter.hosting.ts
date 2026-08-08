@@ -1,7 +1,10 @@
 import { HOSTING_KEY, createHostingSlug, fetchBlobFromUrl, getHostedUrl, getImageExtension, imageUrlToPngBlob, isHostedUrl } from "./utils";
-import puter from "@heyputer/puter.js";
+
+// puter.js is browser-only, so it is imported lazily to keep it out of the SSR pass.
+const puterjs = async () => (await import("@heyputer/puter.js")).default;
 
 export const getOrCreateHosting = async (): Promise<HostingConfig | null> => {
+    const puter = await puterjs();
     const existing = await puter.kv.get<HostingConfig>(HOSTING_KEY);
 
     if (existing?.subDomain) return { subDomain: existing.subDomain };
@@ -24,6 +27,8 @@ export const getOrCreateHosting = async (): Promise<HostingConfig | null> => {
 export const uploadImageToHosting = async ({ hosting, url, projectId, label }: StoreHostedImageParams): Promise<HostedAsset | null> => {
     if (!hosting || !url) return null;
     if (isHostedUrl(url)) return { url: url };
+
+    const puter = await puterjs();
 
     try {
         const resolved = label === "rendered" 

@@ -2,13 +2,23 @@ import { ArrowRight, Clock, Layers } from "lucide-react";
 import NavBar from "../../components/NavBar";
 import { Button } from "../../components/ui/Button";
 import Upload from "../../components/Upload";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useProjects } from "../../lib/useProjects";
 
 export default function Home() {
   const { projects, addProject } = useProjects();
   const nav = useNavigate();
+
+  // TEMP: expose the wipe helpers on window so they can be run from devtools.
+  // Remove along with lib/dev.ts.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    import("../../lib/dev").then((dev) => {
+      Object.assign(window, dev);
+      console.log("[dev] available: reportSpace, wipeAppData, listSubdomains, deleteNookSubdomains");
+    });
+  }, []);
 
   // Upload reports that the file landed; Home decides what that means.
   const handleUploadComplete = useCallback(
