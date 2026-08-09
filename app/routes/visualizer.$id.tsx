@@ -11,19 +11,25 @@ const VisualizerId = () => {
     const location = useLocation();
     const { initialImage, initialRendered, name} = location.state || {};
 
-    const hasInitalGenerated = useRef(false)
+    // Identifies which project+image the current state belongs to. Navigating
+    // between /visualizer/:id reuses this component, so the id alone decides
+    // whether what's on screen is still ours.
+    const generationKey = `${id}::${initialImage ?? ''}`;
+    const activeGeneration = useRef<string | null>(null);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [currentImage, setCurrentImage] = useState<string | null>(initialRendered ?? null);
 
     const handleBack = () => nav('/');
 
-    const createGeneration = async () => {
-        if (!initialImage) return;
+    const createGeneration = async (sourceImage: string, key: string) => {
         try {
             setIsProcessing(true);
-            const result = await generate3DView({ sourceImage: initialImage});
-            
+            const result = await generate3DView({ sourceImage });
+
+            // The user may have moved to another project while this ran.
+            if (activeGeneration.current !== key) return;
+
             if (result.renderedImage) {
                 setCurrentImage(result.renderedImage);
             }
@@ -31,24 +37,24 @@ const VisualizerId = () => {
         } catch (error) {
             console.error("Generation failed", error);
         } finally {
-            setIsProcessing(false);
+            if (activeGeneration.current === key) setIsProcessing(false);
         }
     }
 
     // The upload redirects here as soon as the file lands, so the render kicks
-    // off on arrival. The ref keeps it to one run per visit.
+    // off on arrival. The key keeps it to one run per project.
     useEffect(() => {
-        if (!initialImage || hasInitalGenerated.current) return;
+        if (!initialImage || activeGeneration.current === generationKey) return;
 
-        hasInitalGenerated.current = true;
+        activeGeneration.current = generationKey;
 
-        if (initialRendered) {
-            setCurrentImage(initialRendered);
-            return;
-        }
+        // Drop the previous project's render before showing this one.
+        setCurrentImage(initialRendered ?? null);
 
-        createGeneration();
-    },[initialImage, initialRendered])
+        if (initialRendered) return;
+
+        createGeneration(initialImage, generationKey);
+    },[generationKey, initialImage, initialRendered])
 
     return (
         <div className="visualizer">
