@@ -45,3 +45,7 @@ interface DesignConfig {
     style: string;
 }
 
+interface Generate3DViewParams {
+    sourceImage: string;
+    projectId?: string | null;
+}
