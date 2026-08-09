@@ -24,7 +24,7 @@ export default function Home() {
   const handleUploadComplete = useCallback(
     async (uid: string, file: File) => {
       const saved = await addProject(uid, file);
-      if (!saved) return;
+      if (!saved) throw new Error("Failed to create project");
 
       nav(`/visualizer/${saved.id}`, {
         state: {

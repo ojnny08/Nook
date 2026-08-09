@@ -4,8 +4,19 @@ export const HOSTING_DOMAIN_SUFFIX = ".puter.site";
 export const createHostingSlug = () => `nook-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
 
-export const isHostedUrl = (value: unknown): value is string =>
-    typeof value === "string" && value.includes(HOSTING_DOMAIN_SUFFIX);
+export const isHostedUrl = (value: unknown): value is string => {
+    if (typeof value !== "string") return false;
+
+    try {
+        // parse rather than substring-match, so the suffix only counts when it is
+        // actually the host: not in a path, query, or a lookalike origin
+        const { protocol, hostname } = new URL(value);
+        return protocol === "https:" && hostname.endsWith(HOSTING_DOMAIN_SUFFIX);
+    } catch {
+        // malformed or relative url
+        return false;
+    }
+};
 
 export const imageUrlToPngBlob = async (url: string): Promise<Blob | null> => {
     if (typeof window === "undefined") return null;

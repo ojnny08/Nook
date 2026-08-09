@@ -10,7 +10,7 @@ const VisualizerId = () => {
             <h1> {name || 'Untitled Porject'}</h1>
             <div className="image-container">
                 <h2>Source Image</h2>
-                <img src={initialImage} />
+                <img src={initialImage} alt={name ? `Source floor plan for ${name}` : "Source floor plan"} />
             </div>
         </section>
     );
