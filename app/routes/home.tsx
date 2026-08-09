@@ -2,8 +2,41 @@ import { ArrowRight, Clock, Layers } from "lucide-react";
 import NavBar from "../../components/NavBar";
 import { Button } from "../../components/ui/Button";
 import Upload from "../../components/Upload";
+import { useCallback, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { useProjects } from "../../lib/useProjects";
 
 export default function Home() {
+  const { projects, addProject } = useProjects();
+  const nav = useNavigate();
+
+  // TEMP: expose the wipe helpers on window so they can be run from devtools.
+  // Remove along with lib/dev.ts.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    import("../../lib/dev").then((dev) => {
+      Object.assign(window, dev);
+      console.log("[dev] available: reportSpace, wipeAppData, listSubdomains, deleteNookSubdomains");
+    });
+  }, []);
+
+  // Upload reports that the file landed; Home decides what that means.
+  const handleUploadComplete = useCallback(
+    async (uid: string, file: File) => {
+      const saved = await addProject(uid, file);
+      if (!saved) throw new Error("Failed to create project");
+
+      nav(`/visualizer/${saved.id}`, {
+        state: {
+          initialImage: saved.sourceImage,
+          initialRendered: saved.renderedImage ?? null,
+          name: saved.name,
+        },
+      });
+    },
+    [addProject, nav],
+  );
+
   return (
       <div className="home">
         <NavBar />
@@ -37,7 +70,7 @@ export default function Home() {
                 <p>Supports JPG, PNG, up to 10MB</p>
               </div>
 
-              <Upload />
+              <Upload onUploadComplete={handleUploadComplete} />
             </div>
           </div>
         </section>
@@ -50,22 +83,34 @@ export default function Home() {
                 <p>Your work and community projects</p>
               </div>
 
-              <div className="projects-grid">
-                <div className="projects-card group">
-                  <div className="preview">
-                    <img src="https://roomify-mlhuk267-dfwu1i.puter.site/projects/1770803585402/rendered.png"/>
-                  </div>
+              {projects.length === 0 ? (
+                <p className="projects-empty">
+                  No projects yet — upload a floor plan to get started.
+                </p>
+              ) : (
+                <div className="projects-grid">
+                  {projects.map((project) => (
+                    <div key={project.id} className="projects-card group">
+                      <div className="preview">
+                        <img
+                          src={project.renderedImage ?? project.sourceImage}
+                          alt={project.name ?? "Floor plan"}
+                        />
+                      </div>
 
-                  <div className="card body">
-                    <div>
-                      <h3>Title</h3>
-                      <div className="meta">
-                        <Clock size={12}/>
+                      <div className="card body">
+                        <div>
+                          <h3>{project.name ?? "Untitled"}</h3>
+                          <div className="meta">
+                            <Clock size={12}/>
+                            <span>{new Date(project.timestamp).toLocaleDateString()}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </section>

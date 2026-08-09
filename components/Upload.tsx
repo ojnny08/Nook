@@ -6,18 +6,21 @@ import {
 	ACCEPTED_IMAGE_TYPES,
 	MAX_UPLOAD_BYTES,
 	MAX_UPLOAD_MB,
-	REDIRECT_DELAY_MS,
 } from '../lib/consstants';
 import { uploadFloorPlan } from '../lib/puter.actions';
-import { useNavigate } from 'react-router';
 
-const Upload = () => {
+interface UploadProps {
+	/** Called once the floor plan is written to storage. The parent decides what happens next. */
+	onUploadComplete: (uid: string, file: File) => void | Promise<void>;
+}
+
+const Upload = ({ onUploadComplete }: UploadProps) => {
 	const [file, setFile] = useState<File | null>(null);
 	const [progress, setProgress] = useState(0);
 	const [error, setError] = useState<string | null>(null);
-	const [projectId, setProjectId] = useState<string | null>(null);
+	const [done, setDone] = useState(false);
+
 	const { isSignedIn } = useAuth();
-	const nav = useNavigate();
 
 	const onDrop = useCallback((accepted: File[], rejections: FileRejection[]) => {
 		if (rejections.length > 0) {
@@ -33,48 +36,44 @@ const Upload = () => {
 		if (accepted[0]) {
 			setError(null);
 			setProgress(0);
-			setProjectId(null);
+			setDone(false);
 			setFile(accepted[0]);
 		}
 	}, []);
 
-	// Write the staged file to Puter, reporting real upload progress.
 	useEffect(() => {
 		if (!file) return;
 
 		let cancelled = false;
 
-		uploadFloorPlan(file, (percent) => {
-			if (!cancelled) setProgress(percent);
-		})
-			.then((item) => {
+		(async () => {
+			try {
+				const item = await uploadFloorPlan(file, (percent) => {
+					if (!cancelled) setProgress(percent);
+				});
 				if (cancelled) return;
 				setProgress(100);
-				setProjectId(item.uid);
-			})
-			.catch(() => {
+
+				// awaited so the parent can host the image before it navigates away
+				await onUploadComplete(item.uid, file);
+				if (cancelled) return;
+
+				setDone(true);
+			} catch {
 				if (cancelled) return;
 				// drop back to the dropzone so the user can retry
 				setFile(null);
 				setProgress(0);
 				setError('Upload failed. Please try again.');
-			});
+			}
+		})();
 
 		return () => {
 			cancelled = true;
 		};
-	}, [file]);
+	}, [file, onUploadComplete]);
 
-	// Hand off to the visualizer once the upload has actually succeeded.
-	useEffect(() => {
-		if (!projectId) return;
 
-		const timeout = setTimeout(() => {
-			nav(`/visualizer/${projectId}`);
-		}, REDIRECT_DELAY_MS);
-
-		return () => clearTimeout(timeout);
-	}, [projectId, nav]);
 
 	const { getRootProps, getInputProps, isDragActive } = useDropzone({
 		onDrop,
@@ -112,7 +111,7 @@ const Upload = () => {
 				<div className='upload-status'>
 					<div className='status-content'>
 						<div className='status-icon'>
-							{projectId ? (
+							{done ? (
 								<CheckCircle size={20} className='check'/>
 							) : (
 								<ImageIcon className='image'/>
@@ -126,7 +125,7 @@ const Upload = () => {
 						</div>
 
 						<p className='status-text'>
-							{projectId ? 'Redirecting' : `Uploading Floor Plan ${Math.round(progress)}%`}
+							{done ? 'Redirecting' : `Uploading Floor Plan ${Math.round(progress)}%`}
 						</p>
 					</div>
 				</div>
